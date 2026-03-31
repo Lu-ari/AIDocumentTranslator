@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Document Translator - TR → EN (Yerel AI)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
+            --success: #16a34a;
+            --error: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            color: var(--gray-500);
+            font-size: 0.95rem;
+        }
+
+        .header .badge {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            margin-top: 0.75rem;
+        }
+
+        /* Card */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--gray-300);
+            border-radius: 10px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--gray-50);
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .upload-area svg {
+            width: 48px;
+            height: 48px;
+            color: var(--gray-500);
+            margin-bottom: 1rem;
+        }
+
+        .upload-area.drag-over svg { color: var(--primary); }
+
+        .upload-area h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-area p {
+            color: var(--gray-500);
+            font-size: 0.85rem;
+        }
+
+        #fileInput { display: none; }
+
+        /* File Info */
+        .file-info {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+
+        .file-info.visible { display: flex; }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--error);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .file-details { flex: 1; }
+        .file-details .name { font-weight: 600; font-size: 0.9rem; }
+        .file-details .size { color: var(--gray-500); font-size: 0.8rem; }
+
+        .file-remove {
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.25rem;
+        }
+
+        .file-remove:hover { color: var(--error); }
+
+        /* Options */
+        .options {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: var(--gray-700);
+        }
+
+        .option-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        /* Button */
+        .btn-translate {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: background 0.2s;
+        }
+
+        .btn-translate:hover { background: var(--primary-dark); }
+        .btn-translate:disabled {
+            background: var(--gray-300);
+            cursor: not-allowed;
+        }
+
+        /* Progress */
+        .progress-section {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .progress-section.visible { display: block; }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .progress-status {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .progress-percent {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-detail {
+            color: var(--gray-500);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Result */
+        .result-section {
+            display: none;
+            text-align: center;
+        }
+
+        .result-section.visible { display: block; }
+
+        .result-success svg {
+            width: 56px;
+            height: 56px;
+            color: var(--success);
+            margin-bottom: 1rem;
+        }
+
+        .result-success h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-success p {
+            color: var(--gray-500);
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            background: var(--success);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .btn-download:hover { opacity: 0.9; }
+
+        .btn-new {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--primary);
+            background: none;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Error */
+        .error-box {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            color: var(--error);
+            font-size: 0.9rem;
+        }
+
+        .error-box.visible { display: block; }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--gray-500);
+            font-size: 0.75rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI Document Translator</h1>
+            <p class="subtitle">Türkçe PDF dokümanlarınızı yüksek doğrulukla İngilizceye çevirin</p>
+            <span class="badge">Yerel AI - Ücretsiz</span>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="card" id="uploadCard">
+            <div class="upload-area" id="uploadArea">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <h3>PDF Dosyası Yükleyin</h3>
+                <p>Sürükleyip bırakın veya tıklayarak seçin (max 50MB)</p>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf">
+
+            <div class="file-info" id="fileInfo">
+                <div class="file-icon">PDF</div>
+                <div class="file-details">
+                    <div class="name" id="fileName">-</div>
+                    <div class="size" id="fileSize">-</div>
+                </div>
+                <button class="file-remove" id="fileRemove" title="Kaldır">&times;</button>
+            </div>
+
+            <div class="options">
+                <label class="option-label">
+                    <input type="checkbox" id="optVerify" checked>
+                    Çift kontrol doğrulama
+                </label>
+                <label class="option-label">
+                    <input type="checkbox" id="optBilingual">
+                    İki dilli çıktı (TR + EN)
+                </label>
+            </div>
+
+            <button class="btn-translate" id="btnTranslate" disabled>
+                Çeviriyi Başlat
+            </button>
+
+            <div class="error-box" id="errorBox"></div>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-header">
+                    <span class="progress-status" id="progressStatus">Hazırlanıyor...</span>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-detail" id="progressDetail"></div>
+            </div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="card result-section" id="resultSection">
+            <div class="result-success">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <h3>Çeviri Tamamlandı!</h3>
+                <p id="resultInfo">Dokümanınız başarıyla çevrildi.</p>
+                <a class="btn-download" id="btnDownload" href="#">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    PDF İndir
+                </a>
+                <br>
+                <button class="btn-new" id="btnNew">Yeni çeviri başlat</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            AI Document Translator &bull; Ollama / MarianMT ile Türkçe → İngilizce çeviri
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileRemove = document.getElementById('fileRemove');
+        const btnTranslate = document.getElementById('btnTranslate');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressDetail = document.getElementById('progressDetail');
+        const errorBox = document.getElementById('errorBox');
+        const resultSection = document.getElementById('resultSection');
+        const uploadCard = document.getElementById('uploadCard');
+        const btnDownload = document.getElementById('btnDownload');
+        const btnNew = document.getElementById('btnNew');
+        const resultInfo = document.getElementById('resultInfo');
+
+        let selectedFile = null;
+        let currentTaskId = null;
+
+        // Upload area events
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+        });
+
+        fileRemove.addEventListener('click', () => {
+            selectedFile = null;
+            fileInfo.classList.remove('visible');
+            btnTranslate.disabled = true;
+            fileInput.value = '';
+        });
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showError('Sadece PDF dosyaları kabul edilir.');
+                return;
+            }
+            if (file.size > 50 * 1024 * 1024) {
+                showError('Dosya boyutu 50MB\'dan büyük olamaz.');
+                return;
+            }
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatSize(file.size);
+            fileInfo.classList.add('visible');
+            btnTranslate.disabled = false;
+            hideError();
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.classList.add('visible');
+        }
+
+        function hideError() {
+            errorBox.classList.remove('visible');
+        }
+
+        // Translation flow
+        btnTranslate.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            hideError();
+
+            // Disable UI
+            btnTranslate.disabled = true;
+            btnTranslate.innerHTML = '<span class="spinner"></span>Yükleniyor...';
+            progressSection.classList.add('visible');
+            progressStatus.textContent = 'Dosya yükleniyor...';
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+
+            try {
+                // 1. Upload
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (!uploadRes.ok) {
+                    const err = await uploadRes.json();
+                    throw new Error(err.detail || 'Yükleme hatası');
+                }
+                const uploadData = await uploadRes.json();
+                currentTaskId = uploadData.task_id;
+
+                // 2. Start translation
+                const verify = document.getElementById('optVerify').checked;
+                const bilingual = document.getElementById('optBilingual').checked;
+                const translateRes = await fetch(
+                    `/api/translate/${currentTaskId}?verify=${verify}&bilingual=${bilingual}`,
+                    { method: 'POST' }
+                );
+                if (!translateRes.ok) {
+                    const err = await translateRes.json();
+                    throw new Error(err.detail || 'Çeviri başlatma hatası');
+                }
+
+                // 3. Track progress via WebSocket
+                progressStatus.textContent = 'Çeviri başladı...';
+                trackProgress(currentTaskId);
+
+            } catch (err) {
+                showError(err.message);
+                btnTranslate.disabled = false;
+                btnTranslate.textContent = 'Çeviriyi Başlat';
+                progressSection.classList.remove('visible');
+            }
+        });
+
+        function trackProgress(taskId) {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${location.host}/ws/${taskId}`);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateProgress(data);
+
+                if (data.status === 'completed') {
+                    ws.close();
+                    showResult(taskId);
+                } else if (data.status === 'error') {
+                    ws.close();
+                    showError(data.error || 'Bilinmeyen bir hata oluştu');
+                    btnTranslate.disabled = false;
+                    btnTranslate.textContent = 'Çeviriyi Başlat';
+                }
+            };
+
+            ws.onerror = () => {
+                // Fallback: polling
+                pollProgress(taskId);
+            };
+
+            ws.onclose = () => {};
+        }
+
+        async function pollProgress(taskId) {
+            const interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/status/${taskId}`);
+                    const data = await res.json();
+                    updateProgress(data);
+
+                    if (data.status === 'completed') {
+                        clearInterval(interval);
+                        showResult(taskId);
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        showError(data.error || 'Hata oluştu');
+                        btnTranslate.disabled = false;
+                        btnTranslate.textContent = 'Çeviriyi Başlat';
+                    }
+                } catch (e) {
+                    // polling devam etsin
+                }
+            }, 2000);
+        }
+
+        function updateProgress(data) {
+            const statusMap = {
+                'extracting': 'PDF okunuyor...',
+                'translating': 'Çeviri yapılıyor...',
+                'building_pdf': 'PDF oluşturuluyor...',
+                'processing': 'İşleniyor...',
+            };
+            progressStatus.textContent = statusMap[data.status] || data.status;
+            progressBar.style.width = data.progress + '%';
+            progressPercent.textContent = data.progress + '%';
+            if (data.total_pages > 0) {
+                progressDetail.textContent = `Sayfa ${data.current_page} / ${data.total_pages}`;
+            }
+        }
+
+        function showResult(taskId) {
+            uploadCard.style.display = 'none';
+            resultSection.classList.add('visible');
+            btnDownload.href = `/api/download/${taskId}`;
+            resultInfo.textContent = `"${selectedFile.name}" başarıyla çevrildi.`;
+        }
+
+        btnNew.addEventListener('click', () => {
+            uploadCard.style.display = 'block';
+            resultSection.classList.remove('visible');
+            progressSection.classList.remove('visible');
+            selectedFile = null;
+            fileInfo.classList.remove('visible');
+            fileInput.value = '';
+            btnTranslate.disabled = true;
+            btnTranslate.textContent = 'Çeviriyi Başlat';
+            currentTaskId = null;
+            hideError();
+        });
+    </script>
+</body>
+</html>
