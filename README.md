@@ -24,14 +24,6 @@
 
 ---
 
-## Demo
-
-| Orijinal (TR) | Çeviri (EN) |
-|---|---|
-| Nüfus Kayıt Örneği | Population Register Extract |
-| Tasdik | Authentication |
-| Yakınlık Derecesi | Relationship (Kinship) |
-| Olaylar ve Tarihleri | Events and Dates |
 
 ---
 
