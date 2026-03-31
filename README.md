@@ -1,115 +1,189 @@
-# AI Document Translator — Türkçe → İngilizce (Ücretsiz)
+# AI Document Translator
 
-Tamamen **ücretsiz**, yerel AI modelleriyle Türkçe PDF dokümanlarını İngilizceye çeviren web uygulaması. API key gerekmez.
+> Türkçe PDF belgelerini yüksek doğrulukla İngilizceye çeviren, tamamen **ücretsiz** ve yerel çalışan web uygulaması. API key gerekmez.
+
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
+![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-orange)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
+---
 
 ## Özellikler
 
-- **İki motor seçeneği**:
-  - **Ollama** (önerilen): Yerel LLM (gemma3, llama3.1 vb.) — en iyi kalite, ücretsiz
-  - **MarianMT**: HuggingFace Helsinki-NLP/opus-mt-tr-en — sadece pip install yeterli
-- **Çift geçişli doğrulama** (Ollama modunda): İlk çeviriden sonra otomatik kalite kontrolü
-- **Bağlam-duyarlı çeviri**: Chunk'lar arası tutarlılığı korur
-- **Gerçek zamanlı ilerleme**: WebSocket ile anlık ilerleme takibi
-- **İki dilli çıktı**: Opsiyonel olarak orijinal + çeviri yan yana PDF
-- **Yapısal metin çıkarma**: Paragraf, başlık yapısını korur
-- **Drag & Drop arayüz**: Modern, kullanımı kolay web arayüzü
+| Özellik | Detay |
+|---|---|
+| **Yerel AI** | Ollama (qwen2.5, gemma3 vb.) — internet bağlantısı gerekmez |
+| **Tablo koruması** | PDF tablolar algılanır, landscape modda düzgün render edilir |
+| **Resmi belge sözlüğü** | 40+ hukuki/resmî terim zorunlu olarak doğru çevrilir |
+| **Çift geçişli doğrulama** | Çeviri sonrası ayrı LLM review'u ile kalite kontrolü |
+| **Bağlam tutarlılığı** | Chunk'lar arası bağlam penceresi ile tutarlı terminoloji |
+| **Gerçek zamanlı ilerleme** | WebSocket ile anlık sayfa/ilerleme takibi |
+| **İki dilli çıktı** | Opsiyonel TR + EN yan yana PDF |
+| **Drag & Drop UI** | Sürükle-bırak, sıfır kurulum gerektiren web arayüzü |
+
+---
+
+## Demo
+
+| Orijinal (TR) | Çeviri (EN) |
+|---|---|
+| Nüfus Kayıt Örneği | Population Register Extract |
+| Tasdik | Authentication |
+| Yakınlık Derecesi | Relationship (Kinship) |
+| Olaylar ve Tarihleri | Events and Dates |
+
+---
 
 ## Kurulum
 
-### Seçenek A: Ollama ile (Önerilen — En İyi Kalite)
+### Gereksinimler
+
+- Python 3.11+
+- [Ollama](https://ollama.com/download) kurulu
+
+### Hızlı Başlangıç
 
 ```bash
-# 1. Ollama'yı indir ve kur: https://ollama.com/download
-# 2. Model indir (bir kere yapılır, ~5GB)
-ollama pull gemma3
+# 1. Repoyu klonla
+git clone https://github.com/Lu-ari/AIDocumentTranslator.git
+cd AIDocumentTranslator
 
-# 3. Python paketlerini yükle
+# 2. LLM modelini indir (bir kere yapılır)
+ollama pull qwen2.5:14b        # En iyi kalite (~9GB)
+# veya
+ollama pull gemma3             # Daha hafif (~5GB)
+
+# 3. Python bağımlılıklarını yükle
 pip install -r requirements.txt
 
-# 4. Uygulamayı başlat
+# 4. .env dosyasını yapılandır
+cp .env.example .env
+# .env içinde OLLAMA_MODEL=qwen2.5:14b satırını kullandığın modelle değiştir
+
+# 5. Uygulamayı başlat
 python run.py
 ```
 
-### Seçenek B: MarianMT ile (Sıfır Kurulum)
+Tarayıcıda `http://localhost:8000` adresine git.
+
+### Alternatif: MarianMT (Ollama kurmak istemeyenler için)
 
 ```bash
-# 1. Python paketlerini yükle
-pip install -r requirements.txt
+# .env dosyasında:
+TRANSLATION_ENGINE=marian
 
-# 2. .env dosyasını düzenle
-#    TRANSLATION_ENGINE=marian olarak değiştir
-
-# 3. Uygulamayı başlat (ilk çalıştırmada model otomatik indirilir ~300MB)
+# İlk çalıştırmada ~300MB model otomatik indirilir
 python run.py
 ```
+
+---
 
 ## Kullanım
 
-1. Tarayıcıda `http://localhost:8000` adresine git
-2. Türkçe PDF dokümanını sürükle-bırak veya tıklayarak yükle
-3. Opsiyonları seç:
-   - **Çift kontrol doğrulama**: Çeviri sonrası otomatik doğrulama (Ollama modunda)
-   - **İki dilli çıktı**: TR + EN yan yana PDF
-4. "Çeviriyi Başlat" butonuna tıkla
-5. Çeviri tamamlandığında PDF'i indir
+1. PDF dosyasını sürükle-bırak veya tıklayarak yükle (max 50MB)
+2. Opsiyonları seç:
+   - **Çift kontrol doğrulama** — kalite için önerilir
+   - **İki dilli çıktı** — orijinal + çeviri yan yana
+3. "Çeviriyi Başlat" butonuna tıkla
+4. Gerçek zamanlı ilerlemeyi takip et
+5. Tamamlandığında PDF'i indir
+
+---
 
 ## Motor Karşılaştırması
 
-| Özellik | Ollama (gemma3) | MarianMT |
-|---|---|---|
-| Kalite | ⭐⭐⭐⭐⭐ En iyi | ⭐⭐⭐ İyi |
-| Hız | Orta (GPU ile hızlı) | Hızlı |
-| Kurulum | Ollama + model indir | Sadece pip install |
-| Bağlam anlama | Evet | Sınırlı |
-| Çift doğrulama | Evet | Hayır |
-| API key | Gerekmez | Gerekmez |
-| Fiyat | Ücretsiz | Ücretsiz |
+| | Ollama (qwen2.5:14b) | Ollama (gemma3) | MarianMT |
+|---|---|---|---|
+| **Kalite** | En iyi | Çok iyi | İyi |
+| **Hız** | Orta | Orta | Hızlı |
+| **Tablo anlama** | Mükemmel | İyi | Yok |
+| **Çift doğrulama** | Var | Var | Yok |
+| **API key** | Gerekmez | Gerekmez | Gerekmez |
+| **Boyut** | ~9GB | ~5GB | ~300MB |
+
+---
 
 ## Mimari
 
 ```
-AiDocTranslater/
+AIDocumentTranslator/
 ├── app/
-│   ├── config.py          # Yapılandırma ayarları
-│   ├── main.py            # FastAPI uygulama & route'lar
-│   ├── pdf_processor.py   # PDF metin çıkarma (PyMuPDF)
-│   ├── pdf_builder.py     # Çevrilmiş PDF oluşturma (FPDF2)
-│   └── translator.py      # LLM çeviri motoru (GPT-4o)
+│   ├── config.py          # Env bazlı yapılandırma
+│   ├── main.py            # FastAPI + WebSocket endpoint'leri
+│   ├── pdf_processor.py   # PyMuPDF ile tablo+metin çıkarma
+│   ├── pdf_builder.py     # FPDF2 ile PDF render (landscape, word-wrap)
+│   └── translator.py      # Ollama / MarianMT çeviri motoru
 ├── static/
-│   └── index.html         # Web arayüzü
-├── uploads/               # Yüklenen PDF'ler (otomatik oluşur)
-├── outputs/               # Çevrilmiş PDF'ler (otomatik oluşur)
+│   └── index.html         # Drag & Drop web arayüzü
+├── uploads/               # Yüklenen PDF'ler (otomatik)
+├── outputs/               # Çevrilmiş PDF'ler (otomatik)
+├── .env.example
 ├── requirements.txt
-├── run.py
-└── .env.example
+└── run.py
 ```
 
-## Çeviri Stratejisi
+---
 
-### Ollama modu
-1. Yerel LLM ile bağlam-duyarlı çeviri (system prompt + önceki chunk bağlamı)
-2. Düşük sıcaklık (temperature=0.1) ile tutarlı çıktı
-3. Çift geçişli doğrulama: ayrı bir review prompt ile kalite kontrolü
-4. Retry mekanizması: hata durumunda üstel geri çekilme
+## Çeviri Pipeline'ı
 
-### MarianMT modu
-1. Helsinki-NLP/opus-mt-tr-en — Türkçe→İngilizce için eğitilmiş uzman model
-2. Cümle bazlı batch çeviri (performans optimizasyonu)
-3. Beam search (num_beams=4) ile en iyi çeviri seçimi
+```
+PDF Dosyası
+    │
+    ▼
+PyMuPDF → Metin + Tablo çıkarma (tablo konum tespiti)
+    │
+    ▼
+Sahte tablo filtresi (sayfa numarası barları, URL'ler elenir)
+    │
+    ▼
+Chunk bölme (paragraf sınırları korunur, tablolar bölünmez)
+    │
+    ▼
+Ollama LLM → Çeviri (glossary zorunlu, temperature=0.05)
+    │
+    ▼
+Doğrulama LLM → Kalite review (VERIFIED veya düzeltilmiş çeviri)
+    │
+    ▼
+Post-processing → Terminoloji düzeltme, artefakt temizleme
+    │
+    ▼
+FPDF2 → PDF render (landscape modu, tablo render, word-wrap)
+```
 
-## API Endpoint'leri
+---
+
+## API Referansı
 
 | Endpoint | Method | Açıklama |
 |---|---|---|
 | `/` | GET | Web arayüzü |
-| `/api/upload` | POST | PDF yükle |
-| `/api/translate/{task_id}` | POST | Çeviri başlat |
-| `/api/status/{task_id}` | GET | Durum sorgula |
+| `/api/upload` | POST | PDF yükle → `task_id` döner |
+| `/api/translate/{task_id}` | POST | Çeviriyi başlat |
+| `/api/status/{task_id}` | GET | Anlık durum sorgula |
 | `/api/download/{task_id}` | GET | Çevrilmiş PDF indir |
-| `/ws/{task_id}` | WS | Gerçek zamanlı ilerleme |
+| `/ws/{task_id}` | WebSocket | Gerçek zamanlı ilerleme |
 
-## Gereksinimler
+---
 
-- Python 3.11+
-- **Ollama modu**: [Ollama](https://ollama.com/download) kurulu + model indirilmiş
-- **MarianMT modu**: Sadece pip install (ilk çalıştırmada ~300MB model indirilir)
+## Konfigürasyon (.env)
+
+```env
+# Çeviri motoru: "ollama" veya "marian"
+TRANSLATION_ENGINE=ollama
+
+# Ollama ayarları
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:14b
+```
+
+---
+
+## Teknoloji Yığını
+
+- **Backend**: FastAPI, Uvicorn, Python 3.11
+- **PDF İşleme**: PyMuPDF (fitz), FPDF2
+- **LLM**: Ollama (yerel), HuggingFace Transformers (MarianMT)
+- **İletişim**: WebSocket (async), httpx
+- **Frontend**: Vanilla HTML/CSS/JS (sıfır bağımlılık)
